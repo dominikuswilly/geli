@@ -105,9 +105,24 @@ mvn test
 *Seluruh pengujian unit dan uji beban konkurensi (mencegah overselling secara bersamaan) akan dieksekusi.*
 
 ### Langkah 3: Jalankan Aplikasi
+
+**Opsi A: Menggunakan Maven Langsung**
 ```bash
 mvn spring-boot:run
 ```
+
+**Opsi B: Menggunakan Docker Compose (Platform linux/x86 atau linux/amd64)**
+```bash
+# Build dan jalankan container
+docker compose up --build -d
+
+# Memeriksa log aplikasi
+docker compose logs -f
+
+# Menghentikan container
+docker compose down
+```
+
 Aplikasi akan aktif pada port `8085`.
 
 ### Langkah 4: Buka di Web Browser

@@ -1,0 +1,17 @@
+services:
+  warehouse-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
+    image: warehouse-management:1.0.0
+    container_name: warehouse-management-app
+    platform: linux/amd64
+    ports:
+      - "8085:8085"
+    environment:
+      - SERVER_PORT=8085
+      - SPRING_PROFILES_ACTIVE=default
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    restart: unless-stopped

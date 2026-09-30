@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop Warehouse Management System - Anti-Overselling Guard</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Shop Warehouse System</h1>
+        <p>Sistem Manajemen Gudang & Proteksi Stok Anti-Overselling</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="/swagger-ui.html" target="_blank" class="btn-link" title="Buka Dokumentasi Swagger OpenAPI">
+        <span>⚡ Swagger API Docs</span>
+      </a>
+      <a href="/h2-console" target="_blank" class="btn-link" title="Buka H2 Database Console">
+        <span>🗄️ H2 Console</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-dashboard">
+        <span>📊</span> Dashboard
+      </button>
+      <button class="tab-btn" data-tab="tab-catalog">
+        <span>📦</span> Master Produk & Varian
+      </button>
+      <button class="tab-btn" data-tab="tab-pos">
+        <span>🛒</span> Kasir & Anti-Overselling Demo
+      </button>
+      <button class="tab-btn" data-tab="tab-operations">
+        <span>📥</span> Operasi Stok Gudang
+      </button>
+      <button class="tab-btn" data-tab="tab-ledger">
+        <span>📑</span> Buku Besar Mutasi Stok
+      </button>
+    </nav>
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-content active">
+      <!-- Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total Barang Induk</span>
+            <div class="metric-icon" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">📦</div>
+          </div>
+          <div class="metric-value" id="dash-total-items">0</div>
+          <div class="metric-sub">Kategori produk terdaftar</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total SKU Varian</span>
+            <div class="metric-icon" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee;">🏷️</div>
+          </div>
+          <div class="metric-value" id="dash-total-variants">0</div>
+          <div class="metric-sub">Opsi ukuran & warna aktif</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total Saldo Fisik Stok</span>
+            <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">🔢</div>
+          </div>
+          <div class="metric-value" id="dash-total-stock">0</div>
+          <div class="metric-sub">Unit barang di gudang</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Valuasi Inventaris</span>
+            <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">💰</div>
+          </div>
+          <div class="metric-value" id="dash-total-valuation">Rp 0</div>
+          <div class="metric-sub">Nilai aset barang persediaan</div>
+        </div>
+      </div>
+
+      <!-- Inventory Health Row -->
+      <div class="content-card">
+        <div class="card-header-bar">
+          <h2>Kesehatan Inventaris & Peringatan Stok</h2>
+          <button class="btn-secondary" onclick="loadDashboard()">🔄 Refresh Data</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="font-size: 0.85rem; color: #34d399; font-weight: 600;">STOK AMAN (IN STOCK)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #ffffff;" id="dash-in-stock">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Varian dengan stok memadai (> 5 unit)</div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="font-size: 0.85rem; color: #fbbf24; font-weight: 600;">STOK RENDAH (LOW STOCK)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #ffffff;" id="dash-low-stock">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Perlu restock segera (1 - 5 unit)</div>
+          </div>
+          <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="font-size: 0.85rem; color: #fb7185; font-weight: 600;">STOK HABIS (OUT OF STOCK)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #ffffff;" id="dash-out-of-stock">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Barang kosong, penjualan diblokir otomatis</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MASTER PRODUK & VARIAN -->
+    <section id="tab-catalog" class="tab-content">
+      <div class="content-card">
+        <div class="card-header-bar">
+          <h2>Katalog Master Produk & Varian</h2>
+          <div class="action-row">
+            <input type="text" id="catalog-search" class="search-input" placeholder="Cari nama, kode, kategori..." oninput="debounceSearch()">
+            <button class="btn-primary" onclick="openCreateItemModal()">+ Tambah Produk Baru</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Nama Produk</th>
+                <th>Kategori</th>
+                <th>Harga Dasar</th>
+                <th>Jumlah Varian</th>
+                <th>Total Stok</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: KASIR & ANTI-OVERSELLING DEMO -->
+    <section id="tab-pos" class="tab-content">
+      <div class="guard-banner">
+        <div class="guard-icon">🛡️</div>
+        <div>
+          <strong style="color: #ffffff; font-size: 1rem;">Mesin Proteksi Anti-Overselling Aktif</strong>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Sistem secara atomik mengecek ketersediaan fisik di basis data. Jika kuantitas pembelian melebihi saldo persediaan, sistem langsung menolak transaksi (HTTP 409 Conflict) dan menjamin stok tidak pernah menjadi negatif.
+          </p>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="pos-box">
+          <!-- Form Kasir -->
+          <div>
+            <h2 style="margin-bottom: 1.5rem;">Simulasi Checkout / Kasir POS</h2>
+            
+            <div class="pos-form-group">
+              <label for="pos-variant-select">Pilih Produk & Varian:</label>
+              <select id="pos-variant-select" class="form-control" onchange="onPosVariantChange()">
+                <option value="">-- Pilih Varian Barang --</option>
+              </select>
+            </div>
+
+            <div class="pos-form-group">
+              <label for="pos-quantity">Kuantitas Pembelian (Qty):</label>
+              <input type="number" id="pos-quantity" class="form-control" min="1" value="1" oninput="updatePosPreview()">
+            </div>
+
+            <div class="pos-form-group">
+              <label for="pos-reference">Nomor Referensi Struk / Order ID:</label>
+              <input type="text" id="pos-reference" class="form-control" placeholder="Contoh: ORD-2026-0099">
+            </div>
+
+            <div class="pos-form-group">
+              <label for="pos-notes">Catatan Transaksi:</label>
+              <input type="text" id="pos-notes" class="form-control" placeholder="Penjualan kasir counter 1">
+            </div>
+
+            <button class="btn-success" style="width: 100%; padding: 0.9rem; font-size: 1rem;" onclick="processSaleDeduction()">
+              ⚡ Proses Transaksi & Potong Stok
+            </button>
+          </div>
+
+          <!-- Rincian Preview Kasir -->
+          <div class="preview-card">
+            <h3 style="margin-bottom: 1.25rem; font-size: 1.1rem; color: #ffffff;">Ringkasan Keranjang Belanja</h3>
+            <div class="preview-item">
+              <span style="color: var(--text-muted);">Produk Terpilih:</span>
+              <span id="preview-item-name" style="font-weight: 600;">-</span>
+            </div>
+            <div class="preview-item">
+              <span style="color: var(--text-muted);">SKU Varian:</span>
+              <span id="preview-variant-sku">-</span>
+            </div>
+            <div class="preview-item">
+              <span style="color: var(--text-muted);">Harga Efektif Satuan:</span>
+              <span id="preview-unit-price">Rp 0</span>
+            </div>
+            <div class="preview-item">
+              <span style="color: var(--text-muted);">Sisa Stok di Gudang:</span>
+              <span id="preview-available-stock" style="font-weight: 700;">-</span>
+            </div>
+            <div class="preview-item">
+              <span style="color: var(--text-muted);">Status Ketersediaan:</span>
+              <span id="preview-stock-status">-</span>
+            </div>
+            <div class="preview-item" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.15);">
+              <span style="font-size: 1.05rem; font-weight: 600;">Total Pembayaran:</span>
+              <span id="preview-total-price" class="preview-total">Rp 0</span>
+            </div>
+
+            <div style="margin-top: 1.5rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-sm); padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted);">
+              💡 <em>Tips Uji Coba:</em> Coba pilih varian yang stoknya 0 atau masukkan kuantitas yang lebih besar dari sisa stok untuk melihat respons pencegahan *overselling*.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: OPERASI STOK GUDANG (RESTOCK & OPNAME) -->
+    <section id="tab-operations" class="tab-content">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+        
+        <!-- Restock Card -->
+        <div class="content-card">
+          <div class="card-header-bar">
+            <h2>📥 Penerimaan Barang Masuk (Restock)</h2>
+          </div>
+          <form id="restock-form" onsubmit="handleRestockSubmit(event)">
+            <div class="pos-form-group">
+              <label for="restock-variant-select">Pilih Varian Produk:</label>
+              <select id="restock-variant-select" class="form-control" required>
+                <option value="">-- Pilih Varian --</option>
+              </select>
+            </div>
+            <div class="pos-form-group">
+              <label for="restock-qty">Jumlah Tambahan (Qty Masuk):</label>
+              <input type="number" id="restock-qty" class="form-control" min="1" placeholder="Misal: 50" required>
+            </div>
+            <div class="pos-form-group">
+              <label for="restock-ref">Nomor Surat Jalan / PO Pemasok:</label>
+              <input type="text" id="restock-ref" class="form-control" placeholder="Contoh: PO-SUPP-2026-012">
+            </div>
+            <div class="pos-form-group">
+              <label for="restock-notes">Catatan Penerimaan:</label>
+              <input type="text" id="restock-notes" class="form-control" placeholder="Kiriman batch 2 kondisi baik">
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 0.85rem;">
+              Simpan Penerimaan Stok (+ Restock)
+            </button>
+          </form>
+        </div>
+
+        <!-- Stock Opname / Adjustment Card -->
+        <div class="content-card">
+          <div class="card-header-bar">
+            <h2>⚖️ Penyesuaian Fisik (Stock Opname)</h2>
+          </div>
+          <form id="adjust-form" onsubmit="handleAdjustSubmit(event)">
+            <div class="pos-form-group">
+              <label for="adjust-variant-select">Pilih Varian Produk:</label>
+              <select id="adjust-variant-select" class="form-control" required>
+                <option value="">-- Pilih Varian --</option>
+              </select>
+            </div>
+            <div class="pos-form-group">
+              <label for="adjust-actual-qty">Kuantitas Fisik Aktual di Rak Gudang:</label>
+              <input type="number" id="adjust-actual-qty" class="form-control" min="0" placeholder="Hasil hitung riil" required>
+            </div>
+            <div class="pos-form-group">
+              <label for="adjust-reason">Alasan Penyesuaian:</label>
+              <select id="adjust-reason" class="form-control">
+                <option value="STOCK_OPNAME_BULANAN">Stock Opname Bulanan</option>
+                <option value="BARANG_RUSAK">Barang Cacat / Rusak</option>
+                <option value="BARANG_HILANG">Selisih Barang Hilang</option>
+                <option value="KOREKSI_INPUT">Koreksi Kesalahan Input Admin</option>
+              </select>
+            </div>
+            <div class="pos-form-group">
+              <label for="adjust-notes">Catatan Audit Tambahan:</label>
+              <input type="text" id="adjust-notes" class="form-control" placeholder="Ditemukan selisih fisik saat penghitungan">
+            </div>
+            <button type="submit" class="btn-secondary" style="width: 100%; padding: 0.85rem; border-color: var(--accent-amber); color: #fbbf24;">
+              Simpan Penyesuaian Stok (Rekonsiliasi)
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 5: BUKU BESAR MUTASI STOK -->
+    <section id="tab-ledger" class="tab-content">
+      <div class="content-card">
+        <div class="card-header-bar">
+          <h2>Buku Besar Riwayat Mutasi Stok (Audit Ledger)</h2>
+          <button class="btn-secondary" onclick="loadStockLedger()">🔄 Muat Ulang Mutasi</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Waktu Transaksi</th>
+                <th>Produk & Varian</th>
+                <th>SKU</th>
+                <th>Jenis Mutasi</th>
+                <th>Perubahan Qty</th>
+                <th>Saldo Akhir</th>
+                <th>Referensi</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Modal: Tambah Item Baru -->
+  <div id="modal-create-item" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Tambah Produk Induk Baru</h3>
+        <button class="modal-close" onclick="closeModal('modal-create-item')">&times;</button>
+      </div>
+      <form id="create-item-form" onsubmit="handleCreateItemSubmit(event)">
+        <div class="pos-form-group">
+          <label>Kode Item (SKU Induk Unik) *</label>
+          <input type="text" id="item-code" class="form-control" placeholder="Contoh: HOODIE-PREM" required>
+        </div>
+        <div class="pos-form-group">
+          <label>Nama Produk *</label>
+          <input type="text" id="item-name" class="form-control" placeholder="Contoh: Hoodie Cotton Fleece" required>
+        </div>
+        <div class="pos-form-group">
+          <label>Kategori Produk</label>
+          <input type="text" id="item-category" class="form-control" placeholder="Contoh: Jaket & Outerwear">
+        </div>
+        <div class="pos-form-group">
+          <label>Harga Dasar (Base Price) *</label>
+          <input type="number" id="item-price" class="form-control" min="0" step="500" placeholder="Contoh: 250000" required>
+        </div>
+        <div class="pos-form-group">
+          <label>Deskripsi Produk</label>
+          <textarea id="item-desc" class="form-control" rows="3" placeholder="Deskripsi lengkap produk..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-create-item')">Batal</button>
+          <button type="submit" class="btn-primary">Simpan Produk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Rincian & Manajemen Varian Item -->
+  <div id="modal-variants" class="modal-overlay">
+    <div class="modal-card" style="max-width: 850px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-item-title">Varian Produk</h3>
+          <p id="modal-item-sub" style="font-size: 0.85rem; color: var(--text-muted);"></p>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-variants')">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <h4>Daftar Varian Terdaftar</h4>
+        <button class="btn-primary" onclick="openCreateVariantForm()">+ Tambah Varian</button>
+      </div>
+
+      <!-- Form Tambah Varian (Collapsible) -->
+      <div id="variant-form-container" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 1rem; color: #ffffff;">Form Varian Baru</h4>
+        <form id="create-variant-form" onsubmit="handleCreateVariantSubmit(event)">
+          <input type="hidden" id="variant-parent-item-id">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="pos-form-group">
+              <label>SKU Varian (Unik) *</label>
+              <input type="text" id="variant-sku" class="form-control" placeholder="Contoh: HOODIE-BLK-XL" required>
+            </div>
+            <div class="pos-form-group">
+              <label>Nama Varian *</label>
+              <input type="text" id="variant-name" class="form-control" placeholder="Contoh: Hitam - XL" required>
+            </div>
+            <div class="pos-form-group">
+              <label>Harga Khusus Varian (Opsional)</label>
+              <input type="number" id="variant-price" class="form-control" min="0" step="500" placeholder="Kosongkan jika mengikuti harga dasar">
+            </div>
+            <div class="pos-form-group">
+              <label>Stok Awal (Initial Stock)</label>
+              <input type="number" id="variant-stock" class="form-control" min="0" value="0">
+            </div>
+          </div>
+          <div class="pos-form-group">
+            <label>Atribut Spesifik (JSON / Keterangan)</label>
+            <input type="text" id="variant-attrs" class="form-control" placeholder='{"color":"Hitam", "size":"XL"}'>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+            <button type="button" class="btn-secondary" onclick="closeCreateVariantForm()">Batal</button>
+            <button type="submit" class="btn-success">Simpan Varian</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Varian -->
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Nama Varian</th>
+              <th>Harga Efektif</th>
+              <th>Stok Tersedia</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="variants-table-body">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- App Script -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
